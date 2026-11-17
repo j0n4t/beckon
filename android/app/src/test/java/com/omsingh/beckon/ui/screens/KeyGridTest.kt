@@ -43,8 +43,8 @@ class KeyGridTest {
     fun setUp() = noAnimations()
 
     @Composable
-    private fun Grid() {
-        KeyGrid(host, keyboard, rememberHaptics(enabled = false))
+    private fun Grid(sizeScale: Float = 1f) {
+        KeyGrid(host, keyboard, rememberHaptics(enabled = false), sizeScale = sizeScale)
     }
 
     private fun stateOf(name: String): String? =
@@ -103,6 +103,14 @@ class KeyGridTest {
             ),
             sent,
         )
+    }
+
+    @Test
+    fun `the on-screen keys follow the selected size`() {
+        compose.show { Grid(sizeScale = 1.3f) }
+        val keyHeight = compose.onNodeWithContentDescription("q").fetchSemanticsNode().size.height
+
+        assertEquals(157, keyHeight)
     }
 
     @Test

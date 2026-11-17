@@ -268,7 +268,7 @@ fun KeyboardTab(
                         Icon(Icons.AutoMirrored.Rounded.HelpOutline, contentDescription = stringResource(R.string.keys_menu_help))
                     }
                 }
-                KeyGrid(host, keyboard, haptics, compact = short || landscape)
+                KeyGrid(host, keyboard, haptics, compact = short || landscape, sizeScale = state.preferences.keyboardSize)
             } else {
                 TypingField(
                     value = field,
@@ -306,7 +306,7 @@ fun KeyboardTab(
                         )
                     },
                 )
-                KeyBar(host, keyboard, haptics, beforeKey)
+                KeyBar(host, keyboard, haptics, beforeKey, sizeScale = state.preferences.keyboardSize)
             }
         }
     }

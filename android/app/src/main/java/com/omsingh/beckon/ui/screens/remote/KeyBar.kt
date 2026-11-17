@@ -36,6 +36,7 @@ import com.omsingh.beckon.core.input.HidKeyCodes
 import com.omsingh.beckon.core.input.KeyboardSession
 import com.omsingh.beckon.core.input.ModifierKey
 import com.omsingh.beckon.core.input.ModifierState
+import com.omsingh.beckon.settings.KeyboardSizeRange
 import com.omsingh.beckon.ui.theme.Haptics
 
 private val BarKeyHeight = 52.dp
@@ -62,12 +63,16 @@ fun KeyBar(
     haptics: Haptics,
     beforeKey: () -> Unit,
     modifier: Modifier = Modifier,
+    sizeScale: Float = 1f,
 ) {
     // The session says when a modifier changes through this state. Reading it here, in the body, is
     // what makes the bar redraw: Compose ignores a parameter that the body never reads.
     val version by keyboard.version.collectAsState()
     val states = remember(version) { ModifierKey.values().associateWith { keyboard.visualState(it) } }
     var functionKeys by rememberSaveable { mutableStateOf(false) }
+    val scale = sizeScale.coerceIn(KeyboardSizeRange)
+    val keyHeight = BarKeyHeight * scale
+    val functionKeyWidth = FunctionKeyWidth * scale
 
     Column(modifier.fillMaxWidth()) {
         AnimatedVisibility(
@@ -77,26 +82,26 @@ fun KeyBar(
         ) {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
                 for (n in 1..12) {
-                    ScrollKey("F$n", HidKeyCodes.F1 + n - 1, keyboard, haptics, beforeKey)
+                    ScrollKey("F$n", HidKeyCodes.F1 + n - 1, keyboard, haptics, beforeKey, keyHeight, functionKeyWidth)
                 }
-                ScrollKey(stringResource(R.string.key_page_up), HidKeyCodes.PAGE_UP, keyboard, haptics, beforeKey)
-                ScrollKey(stringResource(R.string.key_page_down), HidKeyCodes.PAGE_DOWN, keyboard, haptics, beforeKey)
-                ScrollKey(stringResource(R.string.key_insert), HidKeyCodes.INSERT, keyboard, haptics, beforeKey)
-                ScrollKey(stringResource(R.string.key_print_screen), HidKeyCodes.PRINT_SCREEN, keyboard, haptics, beforeKey)
+                ScrollKey(stringResource(R.string.key_page_up), HidKeyCodes.PAGE_UP, keyboard, haptics, beforeKey, keyHeight, functionKeyWidth)
+                ScrollKey(stringResource(R.string.key_page_down), HidKeyCodes.PAGE_DOWN, keyboard, haptics, beforeKey, keyHeight, functionKeyWidth)
+                ScrollKey(stringResource(R.string.key_insert), HidKeyCodes.INSERT, keyboard, haptics, beforeKey, keyHeight, functionKeyWidth)
+                ScrollKey(stringResource(R.string.key_print_screen), HidKeyCodes.PRINT_SCREEN, keyboard, haptics, beforeKey, keyHeight, functionKeyWidth)
             }
         }
 
         Row(Modifier.fillMaxWidth()) {
-            BarKey(stringResource(R.string.key_esc), HidKeyCodes.ESC, keyboard, haptics, beforeKey)
-            BarKey(stringResource(R.string.key_tab), HidKeyCodes.TAB, keyboard, haptics, beforeKey)
-            BarModifier(ModifierKey.CTRL, host.ctrl, states.getValue(ModifierKey.CTRL), keyboard, haptics, beforeKey)
-            BarModifier(ModifierKey.ALT, host.alt, states.getValue(ModifierKey.ALT), keyboard, haptics, beforeKey)
-            BarModifier(ModifierKey.SHIFT, host.shift, states.getValue(ModifierKey.SHIFT), keyboard, haptics, beforeKey)
-            BarModifier(ModifierKey.META, host.meta, states.getValue(ModifierKey.META), keyboard, haptics, beforeKey)
+            BarKey(stringResource(R.string.key_esc), HidKeyCodes.ESC, keyboard, haptics, beforeKey, keyHeight)
+            BarKey(stringResource(R.string.key_tab), HidKeyCodes.TAB, keyboard, haptics, beforeKey, keyHeight)
+            BarModifier(ModifierKey.CTRL, host.ctrl, states.getValue(ModifierKey.CTRL), keyboard, haptics, beforeKey, keyHeight)
+            BarModifier(ModifierKey.ALT, host.alt, states.getValue(ModifierKey.ALT), keyboard, haptics, beforeKey, keyHeight)
+            BarModifier(ModifierKey.SHIFT, host.shift, states.getValue(ModifierKey.SHIFT), keyboard, haptics, beforeKey, keyHeight)
+            BarModifier(ModifierKey.META, host.meta, states.getValue(ModifierKey.META), keyboard, haptics, beforeKey, keyHeight)
             KeyCell(
                 label = stringResource(R.string.key_fn),
                 description = stringResource(R.string.keys_function_keys),
-                height = BarKeyHeight,
+                height = keyHeight,
                 isToggle = true,
                 toggledOn = functionKeys,
                 stateText = stringResource(if (functionKeys) R.string.keys_function_keys_shown else R.string.keys_function_keys_hidden),
@@ -107,13 +112,13 @@ fun KeyBar(
             )
         }
         Row(Modifier.fillMaxWidth()) {
-            BarKey(null, HidKeyCodes.LEFT, keyboard, haptics, beforeKey, Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.key_left))
-            BarKey(null, HidKeyCodes.UP, keyboard, haptics, beforeKey, Icons.Rounded.ArrowUpward, stringResource(R.string.key_up))
-            BarKey(null, HidKeyCodes.DOWN, keyboard, haptics, beforeKey, Icons.Rounded.ArrowDownward, stringResource(R.string.key_down))
-            BarKey(null, HidKeyCodes.RIGHT, keyboard, haptics, beforeKey, Icons.AutoMirrored.Rounded.ArrowForward, stringResource(R.string.key_right))
-            BarKey(stringResource(R.string.key_home), HidKeyCodes.HOME, keyboard, haptics, beforeKey)
-            BarKey(stringResource(R.string.key_end), HidKeyCodes.END, keyboard, haptics, beforeKey)
-            BarKey(stringResource(R.string.key_delete), HidKeyCodes.DELETE, keyboard, haptics, beforeKey)
+            BarKey(null, HidKeyCodes.LEFT, keyboard, haptics, beforeKey, keyHeight, Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.key_left))
+            BarKey(null, HidKeyCodes.UP, keyboard, haptics, beforeKey, keyHeight, Icons.Rounded.ArrowUpward, stringResource(R.string.key_up))
+            BarKey(null, HidKeyCodes.DOWN, keyboard, haptics, beforeKey, keyHeight, Icons.Rounded.ArrowDownward, stringResource(R.string.key_down))
+            BarKey(null, HidKeyCodes.RIGHT, keyboard, haptics, beforeKey, keyHeight, Icons.AutoMirrored.Rounded.ArrowForward, stringResource(R.string.key_right))
+            BarKey(stringResource(R.string.key_home), HidKeyCodes.HOME, keyboard, haptics, beforeKey, keyHeight)
+            BarKey(stringResource(R.string.key_end), HidKeyCodes.END, keyboard, haptics, beforeKey, keyHeight)
+            BarKey(stringResource(R.string.key_delete), HidKeyCodes.DELETE, keyboard, haptics, beforeKey, keyHeight)
         }
     }
 }
@@ -126,6 +131,7 @@ private fun RowScope.BarKey(
     keyboard: KeyboardSession,
     haptics: Haptics,
     beforeKey: () -> Unit,
+    height: Dp,
     icon: ImageVector? = null,
     description: String = label.orEmpty(),
 ) {
@@ -133,7 +139,7 @@ private fun RowScope.BarKey(
         label = label,
         icon = icon,
         description = description,
-        height = BarKeyHeight,
+        height = height,
         onDown = {
             beforeKey()
             keyboard.press(usage)
@@ -151,12 +157,13 @@ private fun RowScope.ScrollKey(
     keyboard: KeyboardSession,
     haptics: Haptics,
     beforeKey: () -> Unit,
-    width: Dp = FunctionKeyWidth,
+    height: Dp,
+    width: Dp,
 ) {
     KeyCell(
         label = label,
         description = label,
-        height = BarKeyHeight,
+        height = height,
         width = width,
         holdable = false,
         onDown = {
@@ -177,6 +184,7 @@ private fun RowScope.BarModifier(
     keyboard: KeyboardSession,
     haptics: Haptics,
     beforeKey: () -> Unit,
+    height: Dp,
 ) {
     val stateText = when (state) {
         ModifierState.OFF -> stringResource(R.string.keys_modifier_off, label.spokenName)
@@ -186,7 +194,7 @@ private fun RowScope.BarModifier(
     KeyCell(
         label = label.symbol,
         description = label.spokenName,
-        height = BarKeyHeight,
+        height = height,
         state = state,
         isModifier = true,
         stateText = stateText,

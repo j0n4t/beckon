@@ -6,8 +6,10 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performClick
 import com.omsingh.beckon.R
 import com.omsingh.beckon.core.trust.PairedDevice
@@ -125,6 +127,15 @@ class SettingsScreenTest {
         compose.show { KeyboardSettingsScreen(actions.preferences, actions, onBack = {}) }
         compose.onNodeWithText(string(R.string.keyboard_clipboard)).performClick()
         assertFalse(actions.preferences.clipboardSync)
+    }
+
+    @Test
+    fun `the on-screen keyboard size can be changed`() {
+        compose.show { KeyboardSettingsScreen(actions.preferences, actions, onBack = {}) }
+        assertEquals(1f, actions.preferences.keyboardSize)
+        compose.onNodeWithContentDescription(string(R.string.keyboard_size))
+            .performSemanticsAction(SemanticsActions.SetProgress) { setProgress -> setProgress(1.2f) }
+        assertEquals(1.2f, actions.preferences.keyboardSize, 0.001f)
     }
 
     @Test

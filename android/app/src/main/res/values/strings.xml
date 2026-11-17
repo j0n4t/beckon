@@ -360,6 +360,8 @@
 
     <string name="keyboard_clipboard">Clipboard sharing</string>
     <string name="keyboard_clipboard_subtitle">Show buttons to send the phone’s clipboard to the PC and bring the PC’s back. Nothing is ever shared automatically.</string>
+    <string name="keyboard_size">On-screen PC keyboard size</string>
+    <string name="keyboard_size_subtitle">Adjust the size of the keys Beckon displays on your phone.</string>
     <string name="keyboard_host_title">My PC runs</string>
     <string name="keyboard_host_subtitle">Used over Bluetooth and with older servers, which can’t say what they run. It decides key names and shortcuts.</string>
 

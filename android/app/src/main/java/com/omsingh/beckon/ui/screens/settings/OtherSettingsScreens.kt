@@ -51,12 +51,14 @@ import com.omsingh.beckon.platform.Links
 import com.omsingh.beckon.platform.LocalPlatformActions
 import com.omsingh.beckon.settings.AccentColor
 import com.omsingh.beckon.settings.HostOsChoice
+import com.omsingh.beckon.settings.KeyboardSizeRange
 import com.omsingh.beckon.settings.ThemeMode
 import com.omsingh.beckon.settings.UserPreferences
 import com.omsingh.beckon.ui.components.ChoiceRow
 import com.omsingh.beckon.ui.components.IconTile
 import com.omsingh.beckon.ui.components.MessageCard
 import com.omsingh.beckon.ui.components.SettingsGroup
+import com.omsingh.beckon.ui.components.SliderRow
 import com.omsingh.beckon.ui.components.SwitchRow
 import com.omsingh.beckon.ui.components.osIcon
 import com.omsingh.beckon.ui.theme.MonoStyle
@@ -65,6 +67,7 @@ import com.omsingh.beckon.update.UpdateActions
 import com.omsingh.beckon.update.UpdateUi
 import com.omsingh.beckon.ui.theme.seed
 import com.omsingh.beckon.core.host.HostOs
+import kotlin.math.roundToInt
 
 // ── Keyboard and clipboard ───────────────────────────────────────────
 
@@ -76,6 +79,20 @@ fun KeyboardSettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     SettingsScaffold(title = stringResource(R.string.settings_keyboard), onBack = onBack, modifier = modifier) {
+        SliderRow(
+            title = stringResource(R.string.keyboard_size),
+            value = preferences.keyboardSize.coerceIn(KeyboardSizeRange),
+            valueText = "${(preferences.keyboardSize.coerceIn(KeyboardSizeRange) * 100).roundToInt()}%",
+            onValueChange = { v -> actions.update { it.copy(keyboardSize = v) } },
+            valueRange = KeyboardSizeRange,
+            steps = 5,
+        )
+        Text(
+            stringResource(R.string.keyboard_size_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = Spacing.screen),
+        )
         SwitchRow(
             title = stringResource(R.string.keyboard_clipboard),
             subtitle = stringResource(R.string.keyboard_clipboard_subtitle),

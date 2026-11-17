@@ -26,6 +26,7 @@ import com.omsingh.beckon.core.input.HidKeyCodes
 import com.omsingh.beckon.core.input.KeyboardSession
 import com.omsingh.beckon.core.input.ModifierKey
 import com.omsingh.beckon.core.input.ModifierState
+import com.omsingh.beckon.settings.KeyboardSizeRange
 import com.omsingh.beckon.ui.theme.Haptics
 
 /** The letters of a US keyboard, a row at a time, with the usage code of each key. */
@@ -81,6 +82,7 @@ fun KeyGrid(
     haptics: Haptics,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    sizeScale: Float = 1f,
 ) {
     // The session says when a modifier changes through this state. Reading it here, in the body,
     // is what makes the grid redraw: Compose ignores a parameter that the body never reads, so
@@ -91,8 +93,9 @@ fun KeyGrid(
     val shifted = remember(version) { keyboard.modifiers().leftShift }
     val states = remember(version) { ModifierKey.values().associateWith { keyboard.visualState(it) } }
 
-    val keyHeight = if (compact) 34.dp else 46.dp
-    val functionHeight = if (compact) 30.dp else 38.dp
+    val scale = sizeScale.coerceIn(KeyboardSizeRange)
+    val keyHeight = (if (compact) 34.dp else 46.dp) * scale
+    val functionHeight = (if (compact) 30.dp else 38.dp) * scale
 
     Column(modifier.fillMaxWidth()) {
         KeyRow { for (n in 1..12) TypeKey("F$n", HidKeyCodes.F1 + n - 1, keyboard, haptics, height = functionHeight) }

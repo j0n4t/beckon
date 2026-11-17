@@ -2,6 +2,8 @@ package com.omsingh.beckon.settings
 
 import kotlinx.serialization.Serializable
 
+internal val KeyboardSizeRange = 0.7f..1.3f
+
 /**
  * Single source of truth for user-configurable preferences.
  *
@@ -32,6 +34,8 @@ data class UserPreferences(
     val showScrollStrip: Boolean = true,
 
     // ── Keyboard & clipboard ─────────────────────────────────────────
+    /** Scale of the keys Beckon displays on the phone. */
+    val keyboardSize: Float = 1f,
     /** Offer to copy the clipboard between phone and PC (always explicit, never automatic). */
     val clipboardSync: Boolean = true,
     /** The OS to assume when the PC does not say (Bluetooth, or an older server). */
