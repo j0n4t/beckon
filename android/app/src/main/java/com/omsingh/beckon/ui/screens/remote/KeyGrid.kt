@@ -17,18 +17,24 @@ import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.omsingh.beckon.R
+import com.omsingh.beckon.core.host.Chord
 import com.omsingh.beckon.core.host.HostProfile
 import com.omsingh.beckon.core.input.HidKeyCodes
+import com.omsingh.beckon.core.input.HidModifierMask
 import com.omsingh.beckon.core.input.KeyboardSession
 import com.omsingh.beckon.core.input.ModifierKey
 import com.omsingh.beckon.core.input.ModifierState
+import com.omsingh.beckon.core.input.asciiToHid
 import com.omsingh.beckon.settings.KeyboardSizeRange
 import com.omsingh.beckon.ui.theme.Haptics
 
@@ -54,6 +60,8 @@ private val DigitUsages = intArrayOf(
 )
 private const val DigitLabels = "1234567890"
 private const val DigitShifted = "!@#$%^&*()"
+private const val CompactHomeAlternates = "@#$%&-+()"
+private const val CompactBottomAlternates = "!?;:'\"/"
 
 /** Punctuation keys: what each shows normally and with Shift, and its usage code. */
 private data class Symbol(val plain: String, val shifted: String, val usage: Int)
@@ -85,9 +93,12 @@ fun KeyGrid(
     haptics: Haptics,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    compactLayout: Boolean = false,
     sizeScale: Float = 1f,
     stretchToHeight: Boolean = false,
 ) {
+    var showSymbols by rememberSaveable { mutableStateOf(false) }
+
     // The session says when a modifier changes through this state. Reading it here, in the body,
     // is what makes the grid redraw: Compose ignores a parameter that the body never reads, so
     // passing the version in from outside never worked.
@@ -105,8 +116,9 @@ fun KeyGrid(
         val preferredScale = sizeScale.coerceIn(KeyboardSizeRange)
         val baseKeyHeight = if (compact) 34.dp else 46.dp
         val baseFunctionHeight = if (compact) 30.dp else 38.dp
+        val baseGridHeight = if (compactLayout) baseKeyHeight * 5 else baseFunctionHeight + baseKeyHeight * 7
         val availableScale = if (stretchToHeight && constraints.hasBoundedHeight) {
-            maxHeight / (baseFunctionHeight + baseKeyHeight * 7)
+            maxHeight / baseGridHeight
         } else {
             preferredScale
         }
@@ -120,7 +132,9 @@ fun KeyGrid(
                 .then(if (stretchToHeight) Modifier.fillMaxHeight() else Modifier),
             verticalArrangement = if (stretchToHeight) Arrangement.SpaceBetween else Arrangement.Top,
         ) {
-            KeyRow { for (n in 1..12) TypeKey("F$n", HidKeyCodes.F1 + n - 1, keyboard, haptics, height = functionHeight) }
+            if (!compactLayout) {
+                KeyRow { for (n in 1..12) TypeKey("F$n", HidKeyCodes.F1 + n - 1, keyboard, haptics, height = functionHeight) }
+            }
             KeyRow {
                 TypeKey("Esc", HidKeyCodes.ESC, keyboard, haptics, height = keyHeight)
                 TypeKey("Tab", HidKeyCodes.TAB, keyboard, haptics, height = keyHeight)
@@ -132,26 +146,73 @@ fun KeyGrid(
                 TypeKey("PgDn", HidKeyCodes.PAGE_DOWN, keyboard, haptics, height = keyHeight)
                 TypeKey("PrtSc", HidKeyCodes.PRINT_SCREEN, keyboard, haptics, height = keyHeight)
             }
-            KeyRow {
-                for (i in DigitLabels.indices) {
-                    val label = if (shifted) DigitShifted[i].toString() else DigitLabels[i].toString()
-                    TypeKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString())
-                }
-                TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
-            }
-            for ((index, row) in LetterRows.withIndex()) {
+            if (!compactLayout) {
                 KeyRow {
-                    if (index == 2) ModKey(ModifierKey.SHIFT, host.shift.symbol, host.shift.spokenName, states.getValue(ModifierKey.SHIFT), keyboard, haptics, keyHeight, weight = 1.5f)
-                    for ((i, letter) in row.first.withIndex()) {
-                        val label = if (shifted) letter.uppercaseChar().toString() else letter.toString()
-                        TypeKey(label, row.second[i], keyboard, haptics, height = keyHeight, description = letter.toString())
+                    for (i in DigitLabels.indices) {
+                        val label = if (shifted) DigitShifted[i].toString() else DigitLabels[i].toString()
+                        TypeKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString())
                     }
-                    if (index == 1) TypeKey("Enter", HidKeyCodes.ENTER, keyboard, haptics, height = keyHeight, weight = 1.7f)
-                    if (index == 2) for (symbol in CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight)
+                    TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
                 }
             }
-            KeyRow { for (symbol in SymbolRow) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight) }
+            if (compactLayout && showSymbols) {
+                KeyRow {
+                    for (n in 1..12) TypeKey("F$n", HidKeyCodes.F1 + n - 1, keyboard, haptics, height = keyHeight)
+                }
+                KeyRow {
+                    for (i in DigitLabels.indices) {
+                        val label = if (shifted) DigitShifted[i].toString() else DigitLabels[i].toString()
+                        TypeKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString())
+                    }
+                    TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
+                }
+                KeyRow {
+                    for (symbol in SymbolRow + CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight)
+                }
+            } else {
+                for ((index, row) in LetterRows.withIndex()) {
+                    KeyRow {
+                        if (index == 2) ModKey(ModifierKey.SHIFT, host.shift.symbol, host.shift.spokenName, states.getValue(ModifierKey.SHIFT), keyboard, haptics, keyHeight, weight = 1.5f)
+                        for ((i, letter) in row.first.withIndex()) {
+                            val label = if (shifted) letter.uppercaseChar().toString() else letter.toString()
+                            val alternate = if (compactLayout) when (index) {
+                                0 -> DigitLabels[i]
+                                1 -> CompactHomeAlternates[i]
+                                else -> CompactBottomAlternates[i]
+                            } else null
+                            TypeKey(
+                                label,
+                                row.second[i],
+                                keyboard,
+                                haptics,
+                                height = keyHeight,
+                                description = letter.toString(),
+                                secondaryLabel = alternate?.toString(),
+                                onSecondary = alternate?.let { character -> { sendSecondary(keyboard, character) } },
+                            )
+                        }
+                        if (index == 1) TypeKey("Enter", HidKeyCodes.ENTER, keyboard, haptics, height = keyHeight, weight = 1.7f)
+                        if (index == 2) {
+                            for (symbol in CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight)
+                            if (compactLayout) {
+                                TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
+                            }
+                        }
+                    }
+                }
+            }
+            if (!compactLayout) KeyRow { for (symbol in SymbolRow) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight) }
             KeyRow {
+                if (compactLayout) {
+                    ActionKey(
+                        label = if (showSymbols) "ABC" else "?123",
+                        description = stringResource(if (showSymbols) R.string.keys_switch_to_letters else R.string.keys_switch_to_symbols),
+                        height = keyHeight,
+                        weight = 1.3f,
+                        haptics = haptics,
+                        onClick = { showSymbols = !showSymbols },
+                    )
+                }
                 ModKey(ModifierKey.CTRL, host.ctrl.symbol, host.ctrl.spokenName, states.getValue(ModifierKey.CTRL), keyboard, haptics, keyHeight, weight = 1.45f)
                 ModKey(ModifierKey.META, host.meta.symbol, host.meta.spokenName, states.getValue(ModifierKey.META), keyboard, haptics, keyHeight, weight = 1.45f)
                 ModKey(ModifierKey.ALT, host.alt.symbol, host.alt.spokenName, states.getValue(ModifierKey.ALT), keyboard, haptics, keyHeight, weight = 1.45f)
@@ -170,6 +231,34 @@ private fun KeyRow(content: @Composable RowScope.() -> Unit) {
     Row(Modifier.fillMaxWidth(), content = content)
 }
 
+private fun sendSecondary(keyboard: KeyboardSession, character: Char) {
+    val (usage, needsShift) = asciiToHid(character)
+    if (usage != 0) {
+        keyboard.shortcut(Chord(usage, if (needsShift) HidModifierMask.LEFT_SHIFT else 0))
+    }
+}
+
+@Composable
+private fun RowScope.ActionKey(
+    label: String,
+    description: String,
+    height: Dp,
+    weight: Float,
+    haptics: Haptics,
+    onClick: () -> Unit,
+) {
+    KeyCell(
+        label = label,
+        description = description,
+        height = height,
+        weight = weight,
+        onDown = onClick,
+        onUp = {},
+        haptics = haptics,
+        holdable = false,
+    )
+}
+
 /** A key that goes down when touched and up when released. */
 @Composable
 private fun RowScope.TypeKey(
@@ -181,6 +270,8 @@ private fun RowScope.TypeKey(
     weight: Float = 1f,
     icon: ImageVector? = null,
     description: String = label.orEmpty(),
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
 ) {
     KeyCell(
         label = label,
@@ -191,6 +282,8 @@ private fun RowScope.TypeKey(
         onDown = { keyboard.press(usage) },
         onUp = { keyboard.release(usage) },
         haptics = haptics,
+        alternateLabel = secondaryLabel,
+        onAlternate = onSecondary,
     )
 }
 

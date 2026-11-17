@@ -77,6 +77,7 @@ import com.omsingh.beckon.R
 import com.omsingh.beckon.core.host.ShortcutId
 import com.omsingh.beckon.core.input.KeyboardSession
 import com.omsingh.beckon.core.input.TypingBridge
+import com.omsingh.beckon.settings.KeyboardLayout
 import com.omsingh.beckon.ui.components.SectionHeader
 import com.omsingh.beckon.ui.theme.Haptics
 import com.omsingh.beckon.ui.theme.Spacing
@@ -278,6 +279,7 @@ fun KeyboardTab(
                     keyboard,
                     haptics,
                     compact = short || landscape,
+                    compactLayout = state.preferences.keyboardLayout == KeyboardLayout.COMPACT,
                     sizeScale = state.preferences.keyboardSize,
                     stretchToHeight = forcePcLayout,
                 )

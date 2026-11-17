@@ -26,8 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -37,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.omsingh.beckon.R
 import com.omsingh.beckon.core.input.ModifierState
 import com.omsingh.beckon.ui.theme.Haptics
 
@@ -77,10 +81,20 @@ internal fun RowScope.KeyCell(
     toggledOn: Boolean = false,
     stateText: String? = null,
     holdable: Boolean = true,
+    alternateLabel: String? = null,
+    onAlternate: (() -> Unit)? = null,
 ) {
     var pressed by remember { mutableStateOf(false) }
     val down by rememberUpdatedState(onDown)
     val up by rememberUpdatedState(onUp)
+    val alternate by rememberUpdatedState(onAlternate)
+    val alternateAction = alternateLabel?.let { label ->
+        CustomAccessibilityAction(stringResource(R.string.keyboard_long_press_for, label)) {
+            haptics.key()
+            alternate?.invoke()
+            true
+        }
+    }
     val colors = MaterialTheme.colorScheme
 
     val container = when {
@@ -102,8 +116,28 @@ internal fun RowScope.KeyCell(
         modifier = modifier
             .then(if (width != null) Modifier.width(width) else Modifier.weight(weight))
             .height(height)
-            .pointerInput(holdable) {
-                if (holdable) {
+            .pointerInput(holdable, alternateLabel) {
+                if (alternateLabel != null) {
+                    detectTapGestures(
+                        onPress = {
+                            pressed = true
+                            try {
+                                tryAwaitRelease()
+                            } finally {
+                                pressed = false
+                            }
+                        },
+                        onLongPress = {
+                            haptics.key()
+                            alternate?.invoke()
+                        },
+                        onTap = {
+                            haptics.key()
+                            down()
+                            up()
+                        },
+                    )
+                } else if (holdable) {
                     detectTapGestures(
                         onPress = {
                             pressed = true
@@ -138,6 +172,7 @@ internal fun RowScope.KeyCell(
             .semantics(mergeDescendants = true) {
                 role = if (isModifier || isToggle) Role.Switch else Role.Button
                 contentDescription = description
+                customActions = alternateAction?.let(::listOf).orEmpty()
                 if (stateText != null) stateDescription = stateText
                 if (isModifier) selected = state != ModifierState.OFF
                 if (isToggle) selected = toggledOn
@@ -175,6 +210,14 @@ internal fun RowScope.KeyCell(
                 }
                 if (state == ModifierState.LOCKED) {
                     Icon(Icons.Rounded.Lock, contentDescription = null, modifier = Modifier.align(Alignment.TopEnd).padding(3.dp).size(10.dp))
+                }
+                if (alternateLabel != null) {
+                    Text(
+                        alternateLabel,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(3.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        maxLines = 1,
+                    )
                 }
             }
         }

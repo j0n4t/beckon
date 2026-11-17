@@ -51,6 +51,7 @@ import com.omsingh.beckon.platform.Links
 import com.omsingh.beckon.platform.LocalPlatformActions
 import com.omsingh.beckon.settings.AccentColor
 import com.omsingh.beckon.settings.HostOsChoice
+import com.omsingh.beckon.settings.KeyboardLayout
 import com.omsingh.beckon.settings.KeyboardSizeRange
 import com.omsingh.beckon.settings.RemoteLayout
 import com.omsingh.beckon.settings.ThemeMode
@@ -80,6 +81,21 @@ fun KeyboardSettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     SettingsScaffold(title = stringResource(R.string.settings_keyboard), onBack = onBack, modifier = modifier) {
+        ChoiceRow(
+            title = stringResource(R.string.keyboard_layout_title),
+            subtitle = stringResource(R.string.keyboard_layout_subtitle),
+            options = KeyboardLayout.values().toList(),
+            selected = preferences.keyboardLayout,
+            onSelect = { v -> actions.update { it.copy(keyboardLayout = v) } },
+            label = { layout ->
+                stringResource(
+                    when (layout) {
+                        KeyboardLayout.NORMAL -> R.string.keyboard_layout_normal
+                        KeyboardLayout.COMPACT -> R.string.keyboard_layout_compact
+                    },
+                )
+            },
+        )
         SliderRow(
             title = stringResource(R.string.keyboard_size),
             value = preferences.keyboardSize.coerceIn(KeyboardSizeRange),

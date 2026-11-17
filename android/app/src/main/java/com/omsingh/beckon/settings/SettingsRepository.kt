@@ -55,6 +55,7 @@ class SettingsRepository(private val context: Context) {
         val SHOW_SCROLL_STRIP = booleanPreferencesKey("show_scroll_strip")
         // Keyboard & clipboard
         val KEYBOARD_SIZE = floatPreferencesKey("keyboard_size")
+        val KEYBOARD_LAYOUT = stringPreferencesKey("keyboard_layout")
         val CLIPBOARD_SYNC = booleanPreferencesKey("clipboard_sync")
         val ASSUMED_HOST_OS = stringPreferencesKey("assumed_host_os")
         // Connection
@@ -116,6 +117,7 @@ class SettingsRepository(private val context: Context) {
             showTouchpadButtons = p[Keys.SHOW_TOUCHPAD_BUTTONS] ?: d.showTouchpadButtons,
             showScrollStrip = p[Keys.SHOW_SCROLL_STRIP] ?: d.showScrollStrip,
             keyboardSize = p[Keys.KEYBOARD_SIZE] ?: d.keyboardSize,
+            keyboardLayout = enumOf(p[Keys.KEYBOARD_LAYOUT], d.keyboardLayout),
             clipboardSync = p[Keys.CLIPBOARD_SYNC] ?: d.clipboardSync,
             assumedHostOs = enumOf(p[Keys.ASSUMED_HOST_OS], d.assumedHostOs),
             autoConnect = p[Keys.AUTO_CONNECT] ?: d.autoConnect,
@@ -145,6 +147,7 @@ class SettingsRepository(private val context: Context) {
         p[Keys.SHOW_TOUCHPAD_BUTTONS] = u.showTouchpadButtons
         p[Keys.SHOW_SCROLL_STRIP] = u.showScrollStrip
         p[Keys.KEYBOARD_SIZE] = u.keyboardSize
+        p[Keys.KEYBOARD_LAYOUT] = u.keyboardLayout.name
         p[Keys.CLIPBOARD_SYNC] = u.clipboardSync
         p[Keys.ASSUMED_HOST_OS] = u.assumedHostOs.name
         p[Keys.AUTO_CONNECT] = u.autoConnect

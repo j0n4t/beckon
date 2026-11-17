@@ -2,6 +2,7 @@ package com.omsingh.beckon.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -16,6 +17,7 @@ import com.omsingh.beckon.core.input.HidKeyCodes
 import com.omsingh.beckon.core.input.InputEvent
 import com.omsingh.beckon.core.input.KeyboardSession
 import com.omsingh.beckon.settings.RemoteLayout
+import com.omsingh.beckon.settings.KeyboardLayout
 import com.omsingh.beckon.settings.UserPreferences
 import com.omsingh.beckon.ui.Fixtures
 import com.omsingh.beckon.ui.screens.remote.RemoteActions
@@ -264,6 +266,47 @@ class RemoteScreenTest {
         compose.settle()
         typingField.assertExists()
         compose.onNodeWithContentDescription("q").assertDoesNotExist()
+    }
+
+    @Test
+    fun `compact pc keyboard sends long-pressed number and symbol alternatives`() {
+        show(Fixtures.remote(preferences = UserPreferences(keyboardLayout = KeyboardLayout.COMPACT)))
+        openTab(R.string.remote_mode_keys)
+        compose.onNodeWithContentDescription(string(R.string.keys_more)).performClick()
+        compose.settle()
+        compose.onNodeWithText(string(R.string.keys_menu_pc_layout)).performClick()
+        compose.settle()
+
+        compose.onNodeWithContentDescription("F1").assertDoesNotExist()
+        compose.onNodeWithContentDescription("q").performTouchInput { longClick() }
+        assertEquals(tap(HidKeyCodes.NUM_1), sent)
+
+        sent.clear()
+        compose.onNodeWithContentDescription("a").performTouchInput { longClick() }
+        assertEquals(tap(HidKeyCodes.NUM_2, InputEvent.Modifiers(leftShift = true)), sent)
+    }
+
+    @Test
+    fun `compact pc keyboard switches between letters and function and symbol keys`() {
+        show(Fixtures.remote(preferences = UserPreferences(keyboardLayout = KeyboardLayout.COMPACT)))
+        openTab(R.string.remote_mode_keys)
+        compose.onNodeWithContentDescription(string(R.string.keys_more)).performClick()
+        compose.settle()
+        compose.onNodeWithText(string(R.string.keys_menu_pc_layout)).performClick()
+        compose.settle()
+
+        compose.onNodeWithContentDescription("q").assertIsDisplayed()
+        compose.onNodeWithContentDescription(string(R.string.keys_switch_to_symbols)).performClick()
+        compose.settle()
+        compose.onNodeWithContentDescription("q").assertDoesNotExist()
+        compose.onNodeWithContentDescription("F1").assertIsDisplayed()
+        compose.onNodeWithContentDescription("F12").assertIsDisplayed()
+        compose.onNodeWithContentDescription("`").assertIsDisplayed()
+
+        compose.onNodeWithContentDescription(string(R.string.keys_switch_to_letters)).performClick()
+        compose.settle()
+        compose.onNodeWithContentDescription("q").assertIsDisplayed()
+        compose.onNodeWithContentDescription("F1").assertDoesNotExist()
     }
 
     @Test

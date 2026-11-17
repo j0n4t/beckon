@@ -16,6 +16,7 @@ import com.omsingh.beckon.core.trust.PairedDevice
 import com.omsingh.beckon.platform.Links
 import com.omsingh.beckon.settings.AccentColor
 import com.omsingh.beckon.settings.HostOsChoice
+import com.omsingh.beckon.settings.KeyboardLayout
 import com.omsingh.beckon.settings.RemoteLayout
 import com.omsingh.beckon.settings.ThemeMode
 import com.omsingh.beckon.settings.UserPreferences
@@ -137,6 +138,14 @@ class SettingsScreenTest {
         compose.onNodeWithContentDescription(string(R.string.keyboard_size))
             .performSemanticsAction(SemanticsActions.SetProgress) { setProgress -> setProgress(1.2f) }
         assertEquals(1.2f, actions.preferences.keyboardSize, 0.001f)
+    }
+
+    @Test
+    fun `the pc keyboard can use the compact layout`() {
+        assertEquals(KeyboardLayout.NORMAL, actions.preferences.keyboardLayout)
+        compose.show { KeyboardSettingsScreen(actions.preferences, actions, onBack = {}) }
+        compose.onNodeWithText(string(R.string.keyboard_layout_compact)).performClick()
+        assertEquals(KeyboardLayout.COMPACT, actions.preferences.keyboardLayout)
     }
 
     @Test

@@ -36,6 +36,7 @@ data class UserPreferences(
     // ── Keyboard & clipboard ─────────────────────────────────────────
     /** Scale of the keys Beckon displays on the phone. */
     val keyboardSize: Float = 1f,
+    val keyboardLayout: KeyboardLayout = KeyboardLayout.NORMAL,
     /** Offer to copy the clipboard between phone and PC (always explicit, never automatic). */
     val clipboardSync: Boolean = true,
     /** The OS to assume when the PC does not say (Bluetooth, or an older server). */
@@ -77,6 +78,9 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 @Serializable
 enum class RemoteLayout { CLASSIC, MULTI_PANEL }
+
+@Serializable
+enum class KeyboardLayout { NORMAL, COMPACT }
 
 @Serializable
 enum class AccentColor { CYAN, PURPLE, GREEN, ORANGE, RED }
