@@ -61,7 +61,8 @@ private val DigitUsages = intArrayOf(
 private const val DigitLabels = "1234567890"
 private const val DigitShifted = "!@#$%^&*()"
 private const val CompactHomeAlternates = "@#$%&-+()"
-private const val CompactBottomAlternates = "!?;:'\"/"
+private const val CompactBottomAlternates = "!?[]{};"
+private val CompactExtraSymbolRows = listOf("\"'*,./:<", "=>\\^_`|~")
 
 /** Punctuation keys: what each shows normally and with Shift, and its usage code. */
 private data class Symbol(val plain: String, val shifted: String, val usage: Int)
@@ -160,16 +161,13 @@ fun KeyGrid(
                 KeyRow {
                     for (n in 1..12) TypeKey("F$n", HidKeyCodes.F1 + n - 1, keyboard, haptics, height = keyHeight)
                 }
-                KeyRow {
-                    for (i in DigitLabels.indices) {
-                        val label = if (shifted) DigitShifted[i].toString() else DigitLabels[i].toString()
-                        CharacterKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString(), wifiTextInput = wifiTextInput)
+                for ((index, row) in CompactExtraSymbolRows.withIndex()) {
+                    KeyRow {
+                        for (symbol in row) TextKey(symbol.toString(), keyboard, haptics, height = keyHeight)
+                        if (index == CompactExtraSymbolRows.lastIndex) {
+                            TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
+                        }
                     }
-                    TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
-                }
-                KeyRow {
-                    ModKey(ModifierKey.SHIFT, host.shift.symbol, host.shift.spokenName, states.getValue(ModifierKey.SHIFT), keyboard, haptics, keyHeight, weight = 1.5f)
-                    for (symbol in SymbolRow + CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight, wifiTextInput)
                 }
             } else {
                 for ((index, row) in LetterRows.withIndex()) {
@@ -198,13 +196,13 @@ fun KeyGrid(
                                     }
                                 },
                             )
+                            if (compactLayout && index == 0 && i == row.first.lastIndex) {
+                                TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
+                            }
                         }
                         if (index == 1) TypeKey("Enter", HidKeyCodes.ENTER, keyboard, haptics, height = keyHeight, weight = 1.7f)
                         if (index == 2) {
                             for (symbol in CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight, wifiTextInput)
-                            if (compactLayout) {
-                                TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
-                            }
                         }
                     }
                 }

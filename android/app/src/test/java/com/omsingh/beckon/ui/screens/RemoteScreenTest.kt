@@ -269,7 +269,7 @@ class RemoteScreenTest {
     }
 
     @Test
-    fun `compact pc keyboard sends long-pressed number and symbol alternatives`() {
+    fun `compact wifi keyboard sends long-pressed digits and standard symbols`() {
         show(Fixtures.remote(preferences = UserPreferences(keyboardLayout = KeyboardLayout.COMPACT)))
         openTab(R.string.remote_mode_keys)
         compose.onNodeWithContentDescription(string(R.string.keys_more)).performClick()
@@ -278,12 +278,24 @@ class RemoteScreenTest {
         compose.settle()
 
         compose.onNodeWithContentDescription("F1").assertDoesNotExist()
+        val backspaceX = compose.onNodeWithContentDescription("Backspace").fetchSemanticsNode().boundsInRoot.center.x
+        val pX = compose.onNodeWithContentDescription("p").fetchSemanticsNode().boundsInRoot.center.x
+        assertTrue("Backspace should be immediately after P", backspaceX > pX)
+
         compose.onNodeWithContentDescription("q").performTouchInput { longClick() }
         assertEquals(listOf<InputEvent>(InputEvent.TextInput("1")), sent)
 
         sent.clear()
         compose.onNodeWithContentDescription("a").performTouchInput { longClick() }
         assertEquals(listOf<InputEvent>(InputEvent.TextInput("@")), sent)
+
+        sent.clear()
+        compose.onNodeWithContentDescription("c").performTouchInput { longClick() }
+        assertEquals(listOf<InputEvent>(InputEvent.TextInput("[")), sent)
+
+        sent.clear()
+        compose.onNodeWithContentDescription("n").performTouchInput { longClick() }
+        assertEquals(listOf<InputEvent>(InputEvent.TextInput("}")), sent)
     }
 
     @Test
@@ -301,11 +313,12 @@ class RemoteScreenTest {
         compose.onNodeWithContentDescription("q").assertDoesNotExist()
         compose.onNodeWithContentDescription("F1").assertIsDisplayed()
         compose.onNodeWithContentDescription("F12").assertIsDisplayed()
-        compose.onNodeWithContentDescription("`").assertIsDisplayed()
+        compose.onNodeWithContentDescription("\"").assertIsDisplayed()
+        compose.onNodeWithContentDescription("1").assertDoesNotExist()
+        compose.onNodeWithContentDescription("@").assertDoesNotExist()
 
-        compose.onNodeWithContentDescription("Shift").performClick()
         compose.onNodeWithContentDescription("/").performClick()
-        assertEquals(listOf<InputEvent>(InputEvent.TextInput("?")), sent)
+        assertEquals(listOf<InputEvent>(InputEvent.TextInput("/")), sent)
 
         compose.onNodeWithContentDescription(string(R.string.keys_switch_to_letters)).performClick()
         compose.settle()
