@@ -52,6 +52,7 @@ import com.omsingh.beckon.platform.LocalPlatformActions
 import com.omsingh.beckon.settings.AccentColor
 import com.omsingh.beckon.settings.HostOsChoice
 import com.omsingh.beckon.settings.KeyboardSizeRange
+import com.omsingh.beckon.settings.RemoteLayout
 import com.omsingh.beckon.settings.ThemeMode
 import com.omsingh.beckon.settings.UserPreferences
 import com.omsingh.beckon.ui.components.ChoiceRow
@@ -159,6 +160,20 @@ fun AppearanceSettingsScreen(
 ) {
     val dynamicAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     SettingsScaffold(title = stringResource(R.string.settings_appearance), onBack = onBack, modifier = modifier) {
+        ChoiceRow(
+            title = stringResource(R.string.appearance_remote_layout),
+            options = RemoteLayout.values().toList(),
+            selected = preferences.remoteLayout,
+            onSelect = { v -> actions.update { it.copy(remoteLayout = v) } },
+            label = { layout ->
+                stringResource(
+                    when (layout) {
+                        RemoteLayout.CLASSIC -> R.string.appearance_remote_layout_classic
+                        RemoteLayout.MULTI_PANEL -> R.string.appearance_remote_layout_multi_panel
+                    },
+                )
+            },
+        )
         ChoiceRow(
             title = stringResource(R.string.appearance_theme),
             options = ThemeMode.values().toList(),

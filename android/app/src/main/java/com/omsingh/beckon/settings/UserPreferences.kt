@@ -52,6 +52,7 @@ data class UserPreferences(
     /** Use Material You colours from the wallpaper (Android 12+) instead of the accent. */
     val dynamicColor: Boolean = false,
     val accentColor: AccentColor = AccentColor.CYAN,
+    val remoteLayout: RemoteLayout = RemoteLayout.CLASSIC,
 
     // ── Feedback ─────────────────────────────────────────────────────
     val hapticFeedback: Boolean = true,
@@ -73,6 +74,9 @@ enum class AccelerationCurve { LINEAR, MACOS, WINDOWS, FLAT }
 
 @Serializable
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+@Serializable
+enum class RemoteLayout { CLASSIC, MULTI_PANEL }
 
 @Serializable
 enum class AccentColor { CYAN, PURPLE, GREEN, ORANGE, RED }

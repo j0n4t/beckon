@@ -64,6 +64,7 @@ class SettingsRepository(private val context: Context) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
+        val REMOTE_LAYOUT = stringPreferencesKey("remote_layout")
         // Feedback
         val HAPTIC = booleanPreferencesKey("haptic")
         // Updates
@@ -122,6 +123,7 @@ class SettingsRepository(private val context: Context) {
             themeMode = enumOf(p[Keys.THEME_MODE], d.themeMode),
             dynamicColor = p[Keys.DYNAMIC_COLOR] ?: d.dynamicColor,
             accentColor = enumOf(p[Keys.ACCENT_COLOR], d.accentColor),
+            remoteLayout = enumOf(p[Keys.REMOTE_LAYOUT], d.remoteLayout),
             hapticFeedback = p[Keys.HAPTIC] ?: d.hapticFeedback,
             checkForUpdates = p[Keys.CHECK_FOR_UPDATES] ?: d.checkForUpdates,
             onboardingShown = p[Keys.ONBOARDING_SHOWN] ?: d.onboardingShown,
@@ -150,6 +152,7 @@ class SettingsRepository(private val context: Context) {
         p[Keys.THEME_MODE] = u.themeMode.name
         p[Keys.DYNAMIC_COLOR] = u.dynamicColor
         p[Keys.ACCENT_COLOR] = u.accentColor.name
+        p[Keys.REMOTE_LAYOUT] = u.remoteLayout.name
         p[Keys.HAPTIC] = u.hapticFeedback
         p[Keys.CHECK_FOR_UPDATES] = u.checkForUpdates
         p[Keys.ONBOARDING_SHOWN] = u.onboardingShown

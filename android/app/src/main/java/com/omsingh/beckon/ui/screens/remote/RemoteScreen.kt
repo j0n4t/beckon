@@ -6,6 +6,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,6 +18,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -25,6 +30,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
@@ -58,23 +64,29 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.omsingh.beckon.R
 import com.omsingh.beckon.connection.Notice
 import com.omsingh.beckon.core.host.HostOs
 import com.omsingh.beckon.core.input.ConnectionState
 import com.omsingh.beckon.core.input.KeyboardSession
+import com.omsingh.beckon.settings.RemoteLayout
 import com.omsingh.beckon.ui.components.HeroIllustration
 import com.omsingh.beckon.ui.components.Scene
 import com.omsingh.beckon.ui.components.StatusDot
@@ -143,6 +155,7 @@ fun RemoteScreen(
     val keyboardUi = rememberKeyboardUiState()
     var details by remember { mutableStateOf(false) }
     var gestures by remember { mutableStateOf(false) }
+    var media by remember { mutableStateOf(false) }
     val haptics = rememberHaptics(state.preferences.hapticFeedback)
 
     val usable = state.connection is ConnectionState.Connected || state.connection is ConnectionState.Reconnecting
@@ -167,9 +180,10 @@ fun RemoteScreen(
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
         ) {
             val landscape = maxWidth > maxHeight
+            val multiPanel = state.preferences.remoteLayout == RemoteLayout.MULTI_PANEL
             // Turning the phone changes which keyboard fits it, so a choice made before the turn is forgotten.
             // This is here, not in the Keys tab, which is rebuilt every time it is opened.
-            LaunchedEffect(landscape) { keyboardUi.chosenPcLayout = null }
+            LaunchedEffect(landscape, multiPanel) { keyboardUi.chosenPcLayout = if (multiPanel) true else null }
             val content: @Composable (Modifier) -> Unit = { contentModifier ->
                 RemoteContent(
                     state = state,
@@ -182,7 +196,19 @@ fun RemoteScreen(
                 )
             }
 
-            if (landscape) {
+            if (multiPanel) {
+                MultiPanelContent(
+                    state = state,
+                    actions = actions,
+                    keyboard = keyboard,
+                    keyboardUi = keyboardUi,
+                    haptics = haptics,
+                    onConnectionClick = { details = true },
+                    onGesturesClick = { gestures = true },
+                    onMediaClick = { media = true },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else if (landscape) {
                 Row(Modifier.fillMaxSize()) {
                     Column(
                         modifier = Modifier
@@ -236,6 +262,129 @@ fun RemoteScreen(
 
     if (details) ConnectionDetailsSheet(state, onDisconnect = { details = false; actions.disconnect() }, onSwitch = { details = false; onGoToDevices() }, onDismiss = { details = false })
     if (gestures) GestureHelpSheet(onDismiss = { gestures = false })
+    if (media) {
+        Dialog(onDismissRequest = { media = false }) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 400.dp, max = 640.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                tonalElevation = 6.dp,
+            ) {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .navigationBarsPadding()
+                        .padding(Spacing.screen),
+                ) {
+                    Text(stringResource(R.string.remote_mode_media), style = MaterialTheme.typography.headlineSmall)
+                    MediaTab(
+                        state = state,
+                        actions = actions,
+                        haptics = haptics,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MultiPanelContent(
+    state: RemoteUiState,
+    actions: RemoteActions,
+    keyboard: KeyboardSession,
+    keyboardUi: KeyboardUiState,
+    haptics: com.omsingh.beckon.ui.theme.Haptics,
+    onConnectionClick: () -> Unit,
+    onGesturesClick: () -> Unit,
+    onMediaClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var padFraction by rememberSaveable { mutableStateOf(0.5f) }
+    val splitterDescription = stringResource(R.string.remote_layout_splitter)
+    Box(modifier) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = Spacing.screen),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    ConnectionChip(state.connection, compact = false, onClick = onConnectionClick)
+                }
+                if (state.connected) {
+                    IconButton(onClick = onGesturesClick) {
+                        Icon(Icons.AutoMirrored.Rounded.HelpOutline, contentDescription = stringResource(R.string.pad_gestures_title))
+                    }
+                }
+                IconButton(onClick = onMediaClick) {
+                    Icon(Icons.Rounded.PlayCircle, contentDescription = stringResource(R.string.remote_mode_media))
+                }
+            }
+            BoxWithConstraints(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            ) {
+                val dividerHeight = 48.dp
+                val panelHeightPx = with(LocalDensity.current) { (maxHeight - dividerHeight).toPx() }
+                val dividerDragState = rememberDraggableState { dragAmount ->
+                    if (panelHeightPx > 0f) {
+                        padFraction = (padFraction + dragAmount / panelHeightPx).coerceIn(0.35f, 0.65f)
+                    }
+                }
+                Column(Modifier.fillMaxSize()) {
+                    Box(Modifier.weight(padFraction).fillMaxWidth()) {
+                        TouchpadTab(state, actions, haptics, Modifier.fillMaxSize())
+                    }
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(dividerHeight)
+                            .draggable(state = dividerDragState, orientation = Orientation.Vertical)
+                            .semantics {
+                                contentDescription = splitterDescription
+                                progressBarRangeInfo = ProgressBarRangeInfo(padFraction, 0f..1f)
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                            Modifier
+                                .width(48.dp)
+                                .height(4.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp)),
+                        )
+                    }
+                    Box(Modifier.weight(1f - padFraction).fillMaxWidth()) {
+                        KeyboardTab(
+                            state = state,
+                            actions = actions,
+                            keyboard = keyboard,
+                            haptics = haptics,
+                            modifier = Modifier.fillMaxSize(),
+                            ui = keyboardUi,
+                            forcePcLayout = true,
+                        )
+                    }
+                }
+            }
+        }
+        AnimatedVisibility(
+            visible = state.connection is ConnectionState.Reconnecting,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.matchParentSize(),
+        ) {
+            ReconnectingOverlay()
+        }
+    }
 }
 
 @Composable

@@ -1,9 +1,12 @@
 package com.omsingh.beckon.ui.screens.remote
 
 import android.os.SystemClock
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -83,6 +86,7 @@ fun KeyGrid(
     modifier: Modifier = Modifier,
     compact: Boolean = false,
     sizeScale: Float = 1f,
+    stretchToHeight: Boolean = false,
 ) {
     // The session says when a modifier changes through this state. Reading it here, in the body,
     // is what makes the grid redraw: Compose ignores a parameter that the body never reads, so
@@ -93,51 +97,70 @@ fun KeyGrid(
     val shifted = remember(version) { keyboard.modifiers().leftShift }
     val states = remember(version) { ModifierKey.values().associateWith { keyboard.visualState(it) } }
 
-    val scale = sizeScale.coerceIn(KeyboardSizeRange)
-    val keyHeight = (if (compact) 34.dp else 46.dp) * scale
-    val functionHeight = (if (compact) 30.dp else 38.dp) * scale
+    BoxWithConstraints(
+        modifier
+            .fillMaxWidth()
+            .then(if (stretchToHeight) Modifier.fillMaxHeight() else Modifier),
+    ) {
+        val preferredScale = sizeScale.coerceIn(KeyboardSizeRange)
+        val baseKeyHeight = if (compact) 34.dp else 46.dp
+        val baseFunctionHeight = if (compact) 30.dp else 38.dp
+        val availableScale = if (stretchToHeight && constraints.hasBoundedHeight) {
+            maxHeight / (baseFunctionHeight + baseKeyHeight * 7)
+        } else {
+            preferredScale
+        }
+        val scale = minOf(preferredScale, availableScale)
+        val keyHeight = baseKeyHeight * scale
+        val functionHeight = baseFunctionHeight * scale
 
-    Column(modifier.fillMaxWidth()) {
-        KeyRow { for (n in 1..12) TypeKey("F$n", HidKeyCodes.F1 + n - 1, keyboard, haptics, height = functionHeight) }
-        KeyRow {
-            TypeKey("Esc", HidKeyCodes.ESC, keyboard, haptics, height = keyHeight)
-            TypeKey("Tab", HidKeyCodes.TAB, keyboard, haptics, height = keyHeight)
-            TypeKey("Ins", HidKeyCodes.INSERT, keyboard, haptics, height = keyHeight)
-            TypeKey("Del", HidKeyCodes.DELETE, keyboard, haptics, height = keyHeight)
-            TypeKey("Home", HidKeyCodes.HOME, keyboard, haptics, height = keyHeight)
-            TypeKey("End", HidKeyCodes.END, keyboard, haptics, height = keyHeight)
-            TypeKey("PgUp", HidKeyCodes.PAGE_UP, keyboard, haptics, height = keyHeight)
-            TypeKey("PgDn", HidKeyCodes.PAGE_DOWN, keyboard, haptics, height = keyHeight)
-            TypeKey("PrtSc", HidKeyCodes.PRINT_SCREEN, keyboard, haptics, height = keyHeight)
-        }
-        KeyRow {
-            for (i in DigitLabels.indices) {
-                val label = if (shifted) DigitShifted[i].toString() else DigitLabels[i].toString()
-                TypeKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString())
-            }
-            TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
-        }
-        for ((index, row) in LetterRows.withIndex()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (stretchToHeight) Modifier.fillMaxHeight() else Modifier),
+            verticalArrangement = if (stretchToHeight) Arrangement.SpaceBetween else Arrangement.Top,
+        ) {
+            KeyRow { for (n in 1..12) TypeKey("F$n", HidKeyCodes.F1 + n - 1, keyboard, haptics, height = functionHeight) }
             KeyRow {
-                if (index == 2) ModKey(ModifierKey.SHIFT, host.shift.symbol, host.shift.spokenName, states.getValue(ModifierKey.SHIFT), keyboard, haptics, keyHeight, weight = 1.5f)
-                for ((i, letter) in row.first.withIndex()) {
-                    val label = if (shifted) letter.uppercaseChar().toString() else letter.toString()
-                    TypeKey(label, row.second[i], keyboard, haptics, height = keyHeight, description = letter.toString())
-                }
-                if (index == 1) TypeKey("Enter", HidKeyCodes.ENTER, keyboard, haptics, height = keyHeight, weight = 1.7f)
-                if (index == 2) for (symbol in CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight)
+                TypeKey("Esc", HidKeyCodes.ESC, keyboard, haptics, height = keyHeight)
+                TypeKey("Tab", HidKeyCodes.TAB, keyboard, haptics, height = keyHeight)
+                TypeKey("Ins", HidKeyCodes.INSERT, keyboard, haptics, height = keyHeight)
+                TypeKey("Del", HidKeyCodes.DELETE, keyboard, haptics, height = keyHeight)
+                TypeKey("Home", HidKeyCodes.HOME, keyboard, haptics, height = keyHeight)
+                TypeKey("End", HidKeyCodes.END, keyboard, haptics, height = keyHeight)
+                TypeKey("PgUp", HidKeyCodes.PAGE_UP, keyboard, haptics, height = keyHeight)
+                TypeKey("PgDn", HidKeyCodes.PAGE_DOWN, keyboard, haptics, height = keyHeight)
+                TypeKey("PrtSc", HidKeyCodes.PRINT_SCREEN, keyboard, haptics, height = keyHeight)
             }
-        }
-        KeyRow { for (symbol in SymbolRow) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight) }
-        KeyRow {
-            ModKey(ModifierKey.CTRL, host.ctrl.symbol, host.ctrl.spokenName, states.getValue(ModifierKey.CTRL), keyboard, haptics, keyHeight, weight = 1.45f)
-            ModKey(ModifierKey.META, host.meta.symbol, host.meta.spokenName, states.getValue(ModifierKey.META), keyboard, haptics, keyHeight, weight = 1.45f)
-            ModKey(ModifierKey.ALT, host.alt.symbol, host.alt.spokenName, states.getValue(ModifierKey.ALT), keyboard, haptics, keyHeight, weight = 1.45f)
-            TypeKey("Space", HidKeyCodes.SPACE, keyboard, haptics, height = keyHeight, weight = 3.0f)
-            TypeKey(null, HidKeyCodes.LEFT, keyboard, haptics, height = keyHeight, icon = Icons.AutoMirrored.Rounded.ArrowBack, description = stringResource(R.string.key_left))
-            TypeKey(null, HidKeyCodes.DOWN, keyboard, haptics, height = keyHeight, icon = Icons.Rounded.ArrowDownward, description = stringResource(R.string.key_down))
-            TypeKey(null, HidKeyCodes.UP, keyboard, haptics, height = keyHeight, icon = Icons.Rounded.ArrowUpward, description = stringResource(R.string.key_up))
-            TypeKey(null, HidKeyCodes.RIGHT, keyboard, haptics, height = keyHeight, icon = Icons.AutoMirrored.Rounded.ArrowForward, description = stringResource(R.string.key_right))
+            KeyRow {
+                for (i in DigitLabels.indices) {
+                    val label = if (shifted) DigitShifted[i].toString() else DigitLabels[i].toString()
+                    TypeKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString())
+                }
+                TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
+            }
+            for ((index, row) in LetterRows.withIndex()) {
+                KeyRow {
+                    if (index == 2) ModKey(ModifierKey.SHIFT, host.shift.symbol, host.shift.spokenName, states.getValue(ModifierKey.SHIFT), keyboard, haptics, keyHeight, weight = 1.5f)
+                    for ((i, letter) in row.first.withIndex()) {
+                        val label = if (shifted) letter.uppercaseChar().toString() else letter.toString()
+                        TypeKey(label, row.second[i], keyboard, haptics, height = keyHeight, description = letter.toString())
+                    }
+                    if (index == 1) TypeKey("Enter", HidKeyCodes.ENTER, keyboard, haptics, height = keyHeight, weight = 1.7f)
+                    if (index == 2) for (symbol in CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight)
+                }
+            }
+            KeyRow { for (symbol in SymbolRow) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight) }
+            KeyRow {
+                ModKey(ModifierKey.CTRL, host.ctrl.symbol, host.ctrl.spokenName, states.getValue(ModifierKey.CTRL), keyboard, haptics, keyHeight, weight = 1.45f)
+                ModKey(ModifierKey.META, host.meta.symbol, host.meta.spokenName, states.getValue(ModifierKey.META), keyboard, haptics, keyHeight, weight = 1.45f)
+                ModKey(ModifierKey.ALT, host.alt.symbol, host.alt.spokenName, states.getValue(ModifierKey.ALT), keyboard, haptics, keyHeight, weight = 1.45f)
+                TypeKey("Space", HidKeyCodes.SPACE, keyboard, haptics, height = keyHeight, weight = 3.0f)
+                TypeKey(null, HidKeyCodes.LEFT, keyboard, haptics, height = keyHeight, icon = Icons.AutoMirrored.Rounded.ArrowBack, description = stringResource(R.string.key_left))
+                TypeKey(null, HidKeyCodes.DOWN, keyboard, haptics, height = keyHeight, icon = Icons.Rounded.ArrowDownward, description = stringResource(R.string.key_down))
+                TypeKey(null, HidKeyCodes.UP, keyboard, haptics, height = keyHeight, icon = Icons.Rounded.ArrowUpward, description = stringResource(R.string.key_up))
+                TypeKey(null, HidKeyCodes.RIGHT, keyboard, haptics, height = keyHeight, icon = Icons.AutoMirrored.Rounded.ArrowForward, description = stringResource(R.string.key_right))
+            }
         }
     }
 }

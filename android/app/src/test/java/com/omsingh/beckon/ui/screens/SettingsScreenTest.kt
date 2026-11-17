@@ -16,6 +16,7 @@ import com.omsingh.beckon.core.trust.PairedDevice
 import com.omsingh.beckon.platform.Links
 import com.omsingh.beckon.settings.AccentColor
 import com.omsingh.beckon.settings.HostOsChoice
+import com.omsingh.beckon.settings.RemoteLayout
 import com.omsingh.beckon.settings.ThemeMode
 import com.omsingh.beckon.settings.UserPreferences
 import com.omsingh.beckon.ui.Fixtures
@@ -169,6 +170,14 @@ class SettingsScreenTest {
         assertEquals(ThemeMode.DARK, actions.preferences.themeMode)
         compose.onNodeWithContentDescription(string(R.string.accent_purple)).performClick()
         assertEquals(AccentColor.PURPLE, actions.preferences.accentColor)
+    }
+
+    @Test
+    fun `remote layout defaults to classic and can be changed`() {
+        assertEquals(RemoteLayout.CLASSIC, actions.preferences.remoteLayout)
+        compose.show { AppearanceSettingsScreen(actions.preferences, actions, onBack = {}) }
+        compose.onNodeWithText(string(R.string.appearance_remote_layout_multi_panel)).performClick()
+        assertEquals(RemoteLayout.MULTI_PANEL, actions.preferences.remoteLayout)
     }
 
     // ── Privacy ──────────────────────────────────────────────────────

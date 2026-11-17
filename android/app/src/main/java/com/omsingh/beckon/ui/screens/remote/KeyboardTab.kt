@@ -130,13 +130,14 @@ fun KeyboardTab(
     haptics: Haptics,
     modifier: Modifier = Modifier,
     ui: KeyboardUiState = rememberKeyboardUiState(),
+    forcePcLayout: Boolean = false,
 ) {
     val host = state.host
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // A choice from the menu wins. Without one, the way the phone is held decides (the screen forgets
     // the choice when the phone is turned).
-    val pcLayout = ui.chosenPcLayout ?: landscape
+    val pcLayout = forcePcLayout || (ui.chosenPcLayout ?: landscape)
     var openPhoneKeyboard by remember { mutableStateOf(false) }
 
     var field by remember { mutableStateOf(TextFieldValue("")) }
@@ -179,10 +180,12 @@ fun KeyboardTab(
     // The shortcuts: the same list wherever there is room for it.
     val shortcuts = buildList {
         if (state.clipboardAvailable) {
-            add(ShortcutItem(Icons.Rounded.ContentPaste, stringResource(R.string.keys_paste_phone), null) {
-                beforeKey()
-                actions.pasteFromPhone()
-            })
+            if (!forcePcLayout) {
+                add(ShortcutItem(Icons.Rounded.ContentPaste, stringResource(R.string.keys_paste_phone), null) {
+                    beforeKey()
+                    actions.pasteFromPhone()
+                })
+            }
             add(ShortcutItem(Icons.Rounded.ContentCopy, stringResource(R.string.keys_copy_pc), null) {
                 beforeKey()
                 actions.copyFromPc()
@@ -206,14 +209,14 @@ fun KeyboardTab(
         Column(
             Modifier
                 .fillMaxSize()
-                .imePadding(),
+                .then(if (forcePcLayout) Modifier else Modifier.imePadding()),
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             if (shortcutsAboveKeys) {
                 state.pcClipboard?.let { text ->
                     PcClipboardCard(text, onCopy = actions::copyPcClipboardToPhone, onDismiss = actions::dismissPcClipboard)
                 }
-                Spacer(Modifier.weight(1f))
+                if (!forcePcLayout) Spacer(Modifier.weight(1f))
             } else {
                 // The shortcuts take whatever room the keyboard leaves.
                 Column(
@@ -248,27 +251,36 @@ fun KeyboardTab(
             }
 
             if (pcLayout) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = showPhoneKeyboard) {
-                        Icon(Icons.Rounded.Keyboard, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(stringResource(R.string.keys_menu_phone_layout), modifier = Modifier.padding(start = Spacing.sm))
-                    }
-                    if (shortcutsAboveKeys) {
-                        Row(
-                            Modifier
-                                .weight(1f)
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) { for (item in shortcuts) ShortcutChip(item, haptics) }
-                    } else {
-                        Spacer(Modifier.weight(1f))
-                    }
-                    IconButton(onClick = { help = true }) {
-                        Icon(Icons.AutoMirrored.Rounded.HelpOutline, contentDescription = stringResource(R.string.keys_menu_help))
+                if (!forcePcLayout) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = showPhoneKeyboard) {
+                            Icon(Icons.Rounded.Keyboard, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(R.string.keys_menu_phone_layout), modifier = Modifier.padding(start = Spacing.sm))
+                        }
+                        if (shortcutsAboveKeys) {
+                            Row(
+                                Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) { for (item in shortcuts) ShortcutChip(item, haptics) }
+                        } else {
+                            Spacer(Modifier.weight(1f))
+                        }
+                        IconButton(onClick = { help = true }) {
+                            Icon(Icons.AutoMirrored.Rounded.HelpOutline, contentDescription = stringResource(R.string.keys_menu_help))
+                        }
                     }
                 }
-                KeyGrid(host, keyboard, haptics, compact = short || landscape, sizeScale = state.preferences.keyboardSize)
+                KeyGrid(
+                    host,
+                    keyboard,
+                    haptics,
+                    compact = short || landscape,
+                    sizeScale = state.preferences.keyboardSize,
+                    stretchToHeight = forcePcLayout,
+                )
             } else {
                 TypingField(
                     value = field,

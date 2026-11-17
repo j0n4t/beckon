@@ -143,6 +143,7 @@
     <string name="remote_mode_pad">Pad</string>
     <string name="remote_mode_keys">Keys</string>
     <string name="remote_mode_media">Media</string>
+    <string name="remote_layout_splitter">Resize pad and keyboard</string>
     <string name="remote_not_connected_title">Not connected</string>
     <string name="remote_not_connected_body">Pick a PC on the Devices tab to use this phone as its trackpad and keyboard.</string>
     <string name="remote_go_to_devices">Go to Devices</string>
@@ -371,6 +372,9 @@
     <string name="connection_keep_alive_subtitle">Keep the connection when you switch apps or turn the screen off, with a notification you can use to pause, change volume or disconnect</string>
 
     <string name="appearance_theme">Theme</string>
+    <string name="appearance_remote_layout">Remote layout</string>
+    <string name="appearance_remote_layout_classic">Classic</string>
+    <string name="appearance_remote_layout_multi_panel">Multi Panel</string>
     <string name="appearance_theme_system">System</string>
     <string name="appearance_theme_light">Light</string>
     <string name="appearance_theme_dark">Dark</string>

@@ -5,6 +5,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import com.omsingh.beckon.R
@@ -13,6 +15,8 @@ import com.omsingh.beckon.core.input.ConnectionState
 import com.omsingh.beckon.core.input.HidKeyCodes
 import com.omsingh.beckon.core.input.InputEvent
 import com.omsingh.beckon.core.input.KeyboardSession
+import com.omsingh.beckon.settings.RemoteLayout
+import com.omsingh.beckon.settings.UserPreferences
 import com.omsingh.beckon.ui.Fixtures
 import com.omsingh.beckon.ui.screens.remote.RemoteActions
 import com.omsingh.beckon.ui.screens.remote.RemoteScreen
@@ -39,6 +43,7 @@ class RemoteScreenTest {
     private var disconnected = 0
     private var wentToDevices = 0
     private var pasted = 0
+    private var mediaVisible = false
 
     private val actions = object : RemoteActions {
         override fun send(event: InputEvent) { sent += event }
@@ -47,7 +52,7 @@ class RemoteScreenTest {
         override fun copyFromPc() {}
         override fun copyPcClipboardToPhone() {}
         override fun dismissPcClipboard() {}
-        override fun mediaVisible(visible: Boolean) {}
+        override fun mediaVisible(visible: Boolean) { mediaVisible = visible }
     }
 
     /** The keyboard shares the same record of what was sent as everything else. */
@@ -117,10 +122,36 @@ class RemoteScreenTest {
         compose.onNodeWithText(string(R.string.keys_section_shortcuts)).assertIsDisplayed()
 
         openTab(R.string.remote_mode_media)
-        compose.onNodeWithText(string(R.string.media_volume)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.media_volume)).assertExists()
 
         openTab(R.string.remote_mode_pad)
         compose.onNodeWithContentDescription(string(R.string.pad_description)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `multi panel shows the pc keyboard and opens media in a modal`() {
+        show(Fixtures.remote(preferences = UserPreferences(remoteLayout = RemoteLayout.MULTI_PANEL)))
+
+        compose.onNodeWithContentDescription(string(R.string.pad_description)).assertIsDisplayed()
+        compose.onNodeWithContentDescription("q").assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.keys_paste_phone)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(string(R.string.keys_menu_help)).assertDoesNotExist()
+        val splitter = compose.onNodeWithContentDescription(string(R.string.remote_layout_splitter))
+        val initialDividerY = splitter.fetchSemanticsNode().boundsInRoot.center.y
+        repeat(3) {
+            splitter.performTouchInput { swipeDown(startY = height * 0.1f, endY = height * 0.9f) }
+            compose.settle()
+        }
+        val resizedDividerY = splitter.fetchSemanticsNode().boundsInRoot.center.y
+        assertTrue("Expected divider to move down from $initialDividerY, got $resizedDividerY", resizedDividerY > initialDividerY)
+        compose.onNodeWithContentDescription("F1").assertIsDisplayed()
+        compose.onNodeWithContentDescription(string(R.string.key_right)).assertIsDisplayed()
+
+        compose.onNodeWithContentDescription(string(R.string.remote_mode_media)).performClick()
+        compose.settle()
+
+        compose.onNodeWithText(string(R.string.remote_mode_media)).assertIsDisplayed()
+        assertTrue(mediaVisible)
     }
 
     @Test
