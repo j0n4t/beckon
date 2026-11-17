@@ -43,8 +43,8 @@ class KeyGridTest {
     fun setUp() = noAnimations()
 
     @Composable
-    private fun Grid(sizeScale: Float = 1f) {
-        KeyGrid(host, keyboard, rememberHaptics(enabled = false), sizeScale = sizeScale)
+    private fun Grid(sizeScale: Float = 1f, wifiTextInput: Boolean = false) {
+        KeyGrid(host, keyboard, rememberHaptics(enabled = false), sizeScale = sizeScale, wifiTextInput = wifiTextInput)
     }
 
     private fun stateOf(name: String): String? =
@@ -103,6 +103,15 @@ class KeyGridTest {
             ),
             sent,
         )
+    }
+
+    @Test
+    fun `wifi character keys send the shown text instead of layout dependent key codes`() {
+        compose.show { Grid(wifiTextInput = true) }
+
+        compose.onNodeWithContentDescription("q").performClick()
+
+        assertEquals(listOf(InputEvent.TextInput("q")), sent)
     }
 
     @Test

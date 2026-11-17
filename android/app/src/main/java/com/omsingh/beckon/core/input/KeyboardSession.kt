@@ -27,8 +27,9 @@ enum class ModifierState {
  *
  *  - Tap a modifier once and it is on for the next key; tap it twice quickly and it stays on;
  *    tap it again to release.
- *  - Text typed with no modifier latched is sent as text, so it can be anything the PC can
- *    type. With a modifier latched it is sent as real key presses (Ctrl+C is not the text "C").
+ *  - Text typed without Ctrl, Alt or Super is sent as text, so it can be anything the PC can
+ *    type, regardless of the PC's keyboard layout. With one of those modifiers latched it is
+ *    sent as real key presses (Ctrl+C is not the text "C").
  *
  * Time is passed in, so every rule is a plain test. Not thread-safe: use from the UI thread.
  */
@@ -135,8 +136,11 @@ class KeyboardSession(private val send: (InputEvent) -> Unit) {
     fun type(text: String) {
         if (text.isEmpty()) return
         val mods = modifiers()
-        if (!mods.hasAny) {
+        val hasShortcutModifier = mods.leftCtrl || mods.rightCtrl ||
+            mods.leftAlt || mods.rightAlt || mods.leftMeta || mods.rightMeta
+        if (!hasShortcutModifier) {
             send(InputEvent.TextInput(text))
+            consumeArmed()
             return
         }
         var index = 0

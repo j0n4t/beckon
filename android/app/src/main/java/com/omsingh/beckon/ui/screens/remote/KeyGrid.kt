@@ -94,6 +94,7 @@ fun KeyGrid(
     modifier: Modifier = Modifier,
     compact: Boolean = false,
     compactLayout: Boolean = false,
+    wifiTextInput: Boolean = false,
     sizeScale: Float = 1f,
     stretchToHeight: Boolean = false,
 ) {
@@ -150,7 +151,7 @@ fun KeyGrid(
                 KeyRow {
                     for (i in DigitLabels.indices) {
                         val label = if (shifted) DigitShifted[i].toString() else DigitLabels[i].toString()
-                        TypeKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString())
+                        CharacterKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString(), wifiTextInput = wifiTextInput)
                     }
                     TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
                 }
@@ -162,12 +163,13 @@ fun KeyGrid(
                 KeyRow {
                     for (i in DigitLabels.indices) {
                         val label = if (shifted) DigitShifted[i].toString() else DigitLabels[i].toString()
-                        TypeKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString())
+                        CharacterKey(label, DigitUsages[i], keyboard, haptics, height = keyHeight, description = DigitLabels[i].toString(), wifiTextInput = wifiTextInput)
                     }
                     TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
                 }
                 KeyRow {
-                    for (symbol in SymbolRow + CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight)
+                    ModKey(ModifierKey.SHIFT, host.shift.symbol, host.shift.spokenName, states.getValue(ModifierKey.SHIFT), keyboard, haptics, keyHeight, weight = 1.5f)
+                    for (symbol in SymbolRow + CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight, wifiTextInput)
                 }
             } else {
                 for ((index, row) in LetterRows.withIndex()) {
@@ -180,20 +182,26 @@ fun KeyGrid(
                                 1 -> CompactHomeAlternates[i]
                                 else -> CompactBottomAlternates[i]
                             } else null
-                            TypeKey(
+                            CharacterKey(
                                 label,
                                 row.second[i],
                                 keyboard,
                                 haptics,
                                 height = keyHeight,
                                 description = letter.toString(),
+                                wifiTextInput = wifiTextInput,
                                 secondaryLabel = alternate?.toString(),
-                                onSecondary = alternate?.let { character -> { sendSecondary(keyboard, character) } },
+                                onSecondary = alternate?.let { character ->
+                                    {
+                                        if (wifiTextInput) keyboard.type(character.toString())
+                                        else sendSecondary(keyboard, character)
+                                    }
+                                },
                             )
                         }
                         if (index == 1) TypeKey("Enter", HidKeyCodes.ENTER, keyboard, haptics, height = keyHeight, weight = 1.7f)
                         if (index == 2) {
-                            for (symbol in CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight)
+                            for (symbol in CommaDot) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight, wifiTextInput)
                             if (compactLayout) {
                                 TypeKey(null, HidKeyCodes.BACKSPACE, keyboard, haptics, height = keyHeight, weight = 1.5f, icon = Icons.AutoMirrored.Rounded.Backspace, description = "Backspace")
                             }
@@ -201,7 +209,7 @@ fun KeyGrid(
                     }
                 }
             }
-            if (!compactLayout) KeyRow { for (symbol in SymbolRow) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight) }
+            if (!compactLayout) KeyRow { for (symbol in SymbolRow) SymbolKey(symbol, shifted, keyboard, haptics, keyHeight, wifiTextInput) }
             KeyRow {
                 if (compactLayout) {
                     ActionKey(
@@ -231,13 +239,6 @@ private fun KeyRow(content: @Composable RowScope.() -> Unit) {
     Row(Modifier.fillMaxWidth(), content = content)
 }
 
-private fun sendSecondary(keyboard: KeyboardSession, character: Char) {
-    val (usage, needsShift) = asciiToHid(character)
-    if (usage != 0) {
-        keyboard.shortcut(Chord(usage, if (needsShift) HidModifierMask.LEFT_SHIFT else 0))
-    }
-}
-
 @Composable
 private fun RowScope.ActionKey(
     label: String,
@@ -256,6 +257,68 @@ private fun RowScope.ActionKey(
         onUp = {},
         haptics = haptics,
         holdable = false,
+    )
+}
+
+private fun sendSecondary(keyboard: KeyboardSession, character: Char) {
+    val (usage, needsShift) = asciiToHid(character)
+    if (usage != 0) {
+        keyboard.shortcut(Chord(usage, if (needsShift) HidModifierMask.LEFT_SHIFT else 0))
+    }
+}
+
+@Composable
+private fun RowScope.CharacterKey(
+    label: String,
+    usage: Int,
+    keyboard: KeyboardSession,
+    haptics: Haptics,
+    height: Dp,
+    weight: Float = 1f,
+    description: String = label,
+    wifiTextInput: Boolean,
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
+) {
+    if (wifiTextInput) {
+        TextKey(label, keyboard, haptics, height, weight, description, secondaryLabel, onSecondary)
+    } else {
+        TypeKey(
+            label,
+            usage,
+            keyboard,
+            haptics,
+            height,
+            weight,
+            description = description,
+            secondaryLabel = secondaryLabel,
+            onSecondary = onSecondary,
+        )
+    }
+}
+
+@Composable
+private fun RowScope.TextKey(
+    label: String,
+    keyboard: KeyboardSession,
+    haptics: Haptics,
+    height: Dp,
+    weight: Float = 1f,
+    description: String = label,
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
+) {
+    KeyCell(
+        label = label,
+        description = description,
+        height = height,
+        weight = weight,
+        onDown = { keyboard.type(label) },
+        onUp = {},
+        haptics = haptics,
+        holdable = false,
+        alternateLabel = secondaryLabel,
+        onAlternate = onSecondary,
     )
 }
 
@@ -288,8 +351,23 @@ private fun RowScope.TypeKey(
 }
 
 @Composable
-private fun RowScope.SymbolKey(symbol: Symbol, shifted: Boolean, keyboard: KeyboardSession, haptics: Haptics, height: Dp) {
-    TypeKey(if (shifted) symbol.shifted else symbol.plain, symbol.usage, keyboard, haptics, height = height, description = symbol.plain)
+private fun RowScope.SymbolKey(
+    symbol: Symbol,
+    shifted: Boolean,
+    keyboard: KeyboardSession,
+    haptics: Haptics,
+    height: Dp,
+    wifiTextInput: Boolean,
+) {
+    CharacterKey(
+        if (shifted) symbol.shifted else symbol.plain,
+        symbol.usage,
+        keyboard,
+        haptics,
+        height = height,
+        description = symbol.plain,
+        wifiTextInput = wifiTextInput,
+    )
 }
 
 /** A modifier key: held while touched, or latched by tapping (see [KeyboardSession]). */

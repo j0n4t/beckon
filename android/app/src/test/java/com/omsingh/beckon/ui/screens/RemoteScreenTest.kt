@@ -279,11 +279,11 @@ class RemoteScreenTest {
 
         compose.onNodeWithContentDescription("F1").assertDoesNotExist()
         compose.onNodeWithContentDescription("q").performTouchInput { longClick() }
-        assertEquals(tap(HidKeyCodes.NUM_1), sent)
+        assertEquals(listOf<InputEvent>(InputEvent.TextInput("1")), sent)
 
         sent.clear()
         compose.onNodeWithContentDescription("a").performTouchInput { longClick() }
-        assertEquals(tap(HidKeyCodes.NUM_2, InputEvent.Modifiers(leftShift = true)), sent)
+        assertEquals(listOf<InputEvent>(InputEvent.TextInput("@")), sent)
     }
 
     @Test
@@ -302,6 +302,10 @@ class RemoteScreenTest {
         compose.onNodeWithContentDescription("F1").assertIsDisplayed()
         compose.onNodeWithContentDescription("F12").assertIsDisplayed()
         compose.onNodeWithContentDescription("`").assertIsDisplayed()
+
+        compose.onNodeWithContentDescription("Shift").performClick()
+        compose.onNodeWithContentDescription("/").performClick()
+        assertEquals(listOf<InputEvent>(InputEvent.TextInput("?")), sent)
 
         compose.onNodeWithContentDescription(string(R.string.keys_switch_to_letters)).performClick()
         compose.settle()

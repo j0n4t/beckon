@@ -26,6 +26,16 @@ class KeyboardSessionTest {
     }
 
     @Test
+    fun `shifted text keeps the exact character instead of becoming a layout dependent key`() {
+        keyboard.tapModifier(ModifierKey.SHIFT, 0)
+
+        keyboard.type("?")
+
+        assertEquals(listOf(InputEvent.TextInput("?")), sent)
+        assertEquals(ModifierState.OFF, keyboard.state(ModifierKey.SHIFT))
+    }
+
+    @Test
     fun `empty text sends nothing`() {
         keyboard.type("")
         assertTrue(sent.isEmpty())

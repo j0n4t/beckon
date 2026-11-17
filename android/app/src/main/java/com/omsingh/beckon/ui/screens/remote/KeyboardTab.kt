@@ -280,6 +280,7 @@ fun KeyboardTab(
                     haptics,
                     compact = short || landscape,
                     compactLayout = state.preferences.keyboardLayout == KeyboardLayout.COMPACT,
+                    wifiTextInput = state.overWifi,
                     sizeScale = state.preferences.keyboardSize,
                     stretchToHeight = forcePcLayout,
                 )
